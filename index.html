@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080b12">
+<title>MarketX — Data Saham</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{
+ --bg:#080b12;--card:rgba(19,25,38,.82);--card2:#111827;--text:#f7f8fc;
+ --muted:#929db2;--line:rgba(255,255,255,.08);--accent:#7180ff;
+ --green:#20cf91;--red:#ff5b78;--shadow:0 18px 50px rgba(0,0,0,.25)
+}
+body.light{
+ --bg:#f3f5fa;--card:rgba(255,255,255,.86);--card2:#fff;--text:#101522;
+ --muted:#687286;--line:rgba(0,0,0,.08);--shadow:0 15px 40px rgba(50,60,90,.12)
+}
+html{scroll-behavior:smooth}
+body{
+ margin:0;min-height:100vh;background:
+ radial-gradient(circle at 15% 0%,rgba(113,128,255,.22),transparent 30%),
+ radial-gradient(circle at 100% 20%,rgba(0,190,255,.10),transparent 28%),var(--bg);
+ color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+ transition:.25s
+}
+button,input,select{font:inherit}
+button{cursor:pointer;color:inherit}
+.app{width:min(100%,1000px);margin:auto;padding:18px 16px 105px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{font-size:23px;font-weight:850;letter-spacing:-.7px}
+.brand span{color:var(--accent)}
+.header-actions{display:flex;gap:8px}
+.icon-btn,.back{
+ border:1px solid var(--line);background:var(--card);border-radius:14px;width:43px;height:43px;
+ display:grid;place-items:center;backdrop-filter:blur(18px);box-shadow:var(--shadow)
+}
+.page{display:none}.page.active{display:block}
+.hero{
+ border:1px solid var(--line);border-radius:29px;padding:22px;
+ background:linear-gradient(135deg,rgba(113,128,255,.28),var(--card));
+ box-shadow:var(--shadow);overflow:hidden;position:relative
+}
+.hero:after{
+ content:"";position:absolute;width:190px;height:190px;border-radius:50%;
+ background:rgba(113,128,255,.15);filter:blur(35px);right:-65px;top:-75px
+}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.hero-price{font-size:34px;font-weight:850;margin:7px 0}
+.up{color:var(--green)!important}.down{color:var(--red)!important}
+.muted{color:var(--muted);font-size:13px}
+.search{
+ margin:15px 0;display:flex;align-items:center;gap:9px;padding:13px 15px;
+ border:1px solid var(--line);border-radius:17px;background:var(--card);backdrop-filter:blur(18px)
+}
+.search input{width:100%;border:0;outline:0;background:transparent;color:var(--text)}
+.search input::placeholder{color:var(--muted)}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:21px 0 11px}
+.section-title h2{font-size:17px;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:11px}
+.card{
+ background:var(--card);border:1px solid var(--line);border-radius:21px;padding:16px;
+ backdrop-filter:blur(18px);box-shadow:0 10px 30px rgba(0,0,0,.12)
+}
+.card.clickable{cursor:pointer;transition:.18s}
+.card.clickable:hover{transform:translateY(-2px);border-color:rgba(113,128,255,.35)}
+.stock{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.stock-left{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{
+ width:43px;height:43px;flex:0 0 43px;border-radius:14px;display:grid;place-items:center;
+ background:linear-gradient(135deg,#252e48,#6673c7);font-weight:850;font-size:11px
+}
+.name{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.ticker{font-size:11px;color:var(--muted);margin-top:3px}
+.price{font-weight:800;text-align:right}.change{text-align:right;font-size:12px;margin-top:4px}
+.badge{
+ display:inline-flex;padding:5px 8px;border-radius:99px;background:rgba(113,128,255,.14);
+ color:#aeb6ff;font-size:10px;font-weight:700
+}
+.mini{height:43px!important;margin-top:12px}
+.market-box{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.market-item{padding:14px;border:1px solid var(--line);border-radius:17px;background:var(--card)}
+.market-value{font-weight:800;font-size:19px;margin:5px 0}
+.results{margin-top:-4px;margin-bottom:10px}
+.result-row{
+ display:flex;justify-content:space-between;align-items:center;padding:13px 4px;
+ border-bottom:1px solid var(--line);cursor:pointer
+}
+.result-row:last-child{border-bottom:0}
+.empty{text-align:center;color:var(--muted);padding:36px 12px}
+.bottom{
+ position:fixed;z-index:50;left:50%;bottom:11px;transform:translateX(-50%);
+ width:min(94%,700px);display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
+ padding:8px;background:rgba(14,18,28,.9);border:1px solid var(--line);border-radius:23px;
+ backdrop-filter:blur(22px);box-shadow:0 14px 45px rgba(0,0,0,.4)
+}
+body.light .bottom{background:rgba(255,255,255,.92)}
+.nav{border:0;background:transparent;border-radius:15px;padding:7px 3px;color:#7f899d;font-size:11px}
+.nav.active{color:var(--text);background:rgba(113,128,255,.12)}
+.nav-icon{display:block;font-size:19px;margin-bottom:2px}
+.dev{text-align:center;color:var(--text);font-size:16px;font-weight:800;letter-spacing:.4px;margin:28px 0 5px;text-shadow:0 0 18px rgba(113,128,255,.25)}
+.detail-head{display:flex;align-items:center;gap:11px;margin:3px 0 16px}
+.back{width:auto;height:auto;padding:10px 13px}
+.detail-card{padding:20px;border-radius:25px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.detail-name{font-size:20px;font-weight:800}.detail-price{font-size:32px;font-weight:850;margin:8px 0 3px}
+.detail-actions{display:flex;gap:9px;margin-top:14px}
+.action-btn{border:1px solid var(--line);background:var(--card2);border-radius:13px;padding:10px 13px}
+.action-btn.primary{background:var(--accent);border-color:transparent}
+.periods{display:flex;gap:7px;overflow:auto;margin:16px 0}
+.periods button{
+ border:1px solid var(--line);background:var(--card2);border-radius:10px;padding:8px 12px;
+ white-space:nowrap;font-size:12px
+}
+.periods button.selected{background:var(--accent);border-color:var(--accent)}
+.chart-wrap{height:310px;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.stat{border:1px solid var(--line);border-radius:15px;padding:13px}
+.stat b{display:block;margin-top:5px}
+.setting{
+ display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--line)
+}
+.setting:last-child{border-bottom:0}
+.toggle{
+ width:49px;height:28px;border:0;border-radius:20px;background:#3a4355;padding:3px
+}
+.toggle i{display:block;width:22px;height:22px;background:#fff;border-radius:50%;transition:.2s}
+.toggle.on{background:var(--accent)}.toggle.on i{transform:translateX(21px)}
+.select{
+ background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px
+}
+@media(max-width:560px){
+ .grid{grid-template-columns:1fr}.market-box{grid-template-columns:1fr}
+ .hero-price{font-size:30px}.chart-wrap{height:270px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="header">
+ <div class="brand">Market<span>X</span></div>
+ <div class="header-actions">
+  <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
+ </div>
+</header>
+
+<section id="home" class="page active">
+ <div class="hero">
+  <div class="eyebrow">Pasar Indonesia</div>
+  <div class="hero-price">IHSG 8.120,45</div>
+  <div class="up">▲ +0,82% hari ini</div>
+  <div class="muted" style="margin-top:12px">Data demo/prototipe. Untuk data live, tambahkan API pasar resmi.</div>
+ </div>
+
+ <div class="search">
+  🔎 <input id="searchInput" autocomplete="off" oninput="searchStocks()" placeholder="Cari saham, ticker, atau perusahaan...">
+ </div>
+ <div id="results" class="results"></div>
+
+ <div class="section-title"><h2>Market Overview</h2><span class="badge">LIVE READY</span></div>
+ <div class="market-box">
+  <div class="market-item"><div class="muted">USD/IDR</div><div class="market-value">16.420</div><span class="up">+0,15%</span></div>
+  <div class="market-item"><div class="muted">Bitcoin</div><div class="market-value">$68.240</div><span class="up">+1,21%</span></div>
+  <div class="market-item"><div class="muted">Emas</div><div class="market-value">$3.820</div><span class="up">+0,44%</span></div>
+ </div>
+
+ <div class="section-title"><h2>Saham Populer</h2><span class="muted">Indonesia & Global</span></div>
+ <div id="stockGrid" class="grid"></div>
+ <div class="dev">Dikembangkan oleh Robi Dan Gpt</div>
+</section>
+
+<section id="watchlist" class="page">
+ <div class="section-title"><h2>⭐ Watchlist</h2><span class="muted">Favorit kamu</span></div>
+ <div id="watchGrid" class="grid"></div>
+ <div class="dev">Dikembangkan oleh Robi Dan Gpt</div>
+</section>
+
+<section id="history" class="page">
+ <div class="section-title"><h2>🕘 History</h2><button class="badge" onclick="clearHistory()">Hapus semua</button></div>
+ <div id="historyGrid" class="grid"></div>
+ <div class="dev">Dikembangkan oleh Robi Dan Gpt</div>
+</section>
+
+<section id="settings" class="page">
+ <div class="section-title"><h2 id="settingsTitle">⚙️ Settings</h2></div>
+ <div class="card">
+  <div class="setting">
+   <div><b id="whiteModeLabel">White Mode</b><div class="muted" id="whiteModeDesc">Gunakan tampilan terang</div></div>
+   <button id="themeToggle" class="toggle" onclick="toggleTheme()"><i></i></button>
+  </div>
+  <div class="setting">
+   <div><b id="languageLabel">Bahasa</b><div class="muted" id="languageDesc">Bahasa aplikasi</div></div>
+   <select id="languageSelect" class="select" onchange="setLanguage(this.value)"><option value="id">Indonesia</option><option value="en">English</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="zh">中文</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="ru">Русский</option></select>
+  </div>
+  <div class="setting">
+   <div><b id="currencyLabel">Mata uang</b><div class="muted" id="currencyDesc">Format harga</div></div>
+   <select class="select"><option>IDR</option><option>USD</option><option>EUR</option><option>JPY</option></select>
+  </div>
+  <div class="setting">
+   <div><b id="notifLabel">Notifikasi</b><div class="muted" id="notifDesc">Perubahan harga & watchlist</div></div>
+   <button class="toggle" onclick="this.classList.toggle('on')"><i></i></button>
+  </div>
+  <div class="setting">
+   <div><b id="reduceLabel">Reduce Animations</b><div class="muted" id="reduceDesc">Kurangi efek gerak</div></div>
+   <button class="toggle" onclick="this.classList.toggle('on')"><i></i></button>
+  </div>
+ </div>
+
+ <div class="section-title"><h2 id="dataTitle">Data</h2></div>
+ <div class="card">
+  <div class="setting"><div><b id="clearHistoryLabel">Hapus History</b><div class="muted" id="clearHistoryDesc">Menghapus daftar saham yang pernah dibuka</div></div><button id="clearHistoryBtn" class="action-btn" onclick="clearHistory()">Hapus</button></div>
+  <div class="setting"><div><b id="resetWatchLabel">Reset Watchlist</b><div class="muted" id="resetWatchDesc">Menghapus semua favorit</div></div><button id="resetWatchBtn" class="action-btn" onclick="clearWatch()">Reset</button></div>
+ </div>
+
+ <div class="section-title"><h2 id="aboutTitle">Tentang</h2></div>
+ <div class="card">
+  <b>MarketX</b>
+  <p class="muted" id="aboutDesc">Aplikasi data saham dengan tampilan modern, search, watchlist, history, dan grafik.</p>
+  <p class="muted" id="versionText">Versi 1.0 Prototype</p>
+  <p class="muted" id="developerText">Developer: Dikembangkan oleh Robi Dan Gpt</p>
+  <p class="muted" id="demoNote">Catatan: angka saham bawaan adalah data demo, bukan kuotasi real-time.</p>
+ </div>
+ <div class="dev">Dikembangkan oleh Robi Dan Gpt</div>
+</section>
+
+<section id="detail" class="page">
+ <div class="detail-head">
+  <button class="back" onclick="goHome()">← Kembali</button>
+  <span class="muted">Detail Saham</span>
+ </div>
+ <div id="detailContent"></div>
+ <div class="dev">Dikembangkan oleh Robi Dan Gpt</div>
+</section>
+
+</div>
+
+<nav class="bottom">
+ <button class="nav active" data-page="home" onclick="showPage('home',this)"><span class="nav-icon">⌂</span><span id="navHome">Home</span></button>
+ <button class="nav" data-page="watchlist" onclick="showPage('watchlist',this)"><span class="nav-icon">☆</span><span id="navWatch">Watchlist</span></button>
+ <button class="nav" data-page="history" onclick="showPage('history',this)"><span class="nav-icon">◷</span><span id="navHistory">History</span></button>
+ <button class="nav" data-page="settings" onclick="showPage('settings',this)"><span class="nav-icon">⚙</span><span id="navSettings">Settings</span></button>
+</nav>
+
+<script>
+const stocks=[
+["BBCA","Bank Central Asia","9850","2.12","ID"],["BBRI","Bank Rakyat Indonesia","4180","1.08","ID"],
+["BMRI","Bank Mandiri","5950","1.55","ID"],["BBNI","Bank Negara Indonesia","5275","0.74","ID"],
+["BBTN","Bank Tabungan Negara","1510","0.88","ID"],["BRIS","Bank Syariah Indonesia","2640","1.15","ID"],
+["TLKM","Telkom Indonesia","3020","-0.33","ID"],["ASII","Astra International","5050","0.61","ID"],
+["GOTO","GoTo Gojek Tokopedia","68","2.94","ID"],["ANTM","Aneka Tambang","3120","-0.48","ID"],
+["INCO","Vale Indonesia","4080","0.22","ID"],["PTBA","Bukit Asam","2850","1.32","ID"],
+["ADRO","Alamtri Resources","2410","-0.41","ID"],["ITMG","Indo Tambangraya","27800","0.83","ID"],
+["INDF","Indofood Sukses Makmur","7150","0.36","ID"],["ICBP","Indofood CBP","11250","0.45","ID"],
+["UNVR","Unilever Indonesia","2010","-0.76","ID"],["MDKA","Merdeka Copper Gold","2760","1.02","ID"],
+["AMMN","Amman Mineral","7950","0.63","ID"],["SMGR","Semen Indonesia","3010","-0.25","ID"],
+["AAPL","Apple","256.10","1.42","US"],["NVDA","NVIDIA","178.45","2.86","US"],
+["MSFT","Microsoft","514.20","0.62","US"],["AMZN","Amazon","231.70","1.18","US"],
+["GOOGL","Alphabet","245.80","0.93","US"],["META","Meta Platforms","739.10","1.75","US"],
+["TSLA","Tesla","447.30","-1.21","US"],["AMD","AMD","184.40","2.08","US"],
+["INTC","Intel","39.25","-0.44","US"],["NFLX","Netflix","1180.20","1.02","US"],
+["AVGO","Broadcom","381.60","1.92","US"],["JPM","JPMorgan Chase","308.50","0.51","US"],
+["V","Visa","341.20","0.37","US"],["MA","Mastercard","594.40","0.64","US"],
+["COST","Costco","978.30","0.72","US"],["ORCL","Oracle","296.50","1.08","US"],
+["CRM","Salesforce","271.40","0.43","US"],["DIS","Walt Disney","112.30","-0.28","US"],
+["SONY","Sony Group","25.80","0.77","JP"],["TM","Toyota Motor","196.40","0.43","JP"],
+["7203","Toyota Japan","2840","0.51","JP"],["9984","SoftBank Group","18120","1.12","JP"],
+["6758","Sony Japan","3310","0.67","JP"],["005930","Samsung Electronics","71200","1.11","KR"],
+["000660","SK Hynix","258000","2.03","KR"],["035420","NAVER","242000","0.32","KR"],
+["BABA","Alibaba","154.80","-0.62","CN"],["0700","Tencent","612.50","1.24","HK"],
+["9988","Alibaba HK","155.10","-0.55","HK"],["TSM","TSMC","281.20","1.84","TW"],
+["ASML","ASML Holding","1020.40","1.31","NL"],["SAP","SAP","296.80","0.55","DE"],
+["NESN","Nestle","78.20","0.19","CH"],["SHOP","Shopify","152.70","2.15","CA"],
+["RY","Royal Bank of Canada","171.50","0.31","CA"],["BHP","BHP Group","47.80","0.68","AU"],
+["RIO","Rio Tinto","67.10","-0.21","UK"],["SHEL","Shell","75.40","0.44","UK"],
+["AZN","AstraZeneca","148.20","0.36","UK"],["NOVO","Novo Nordisk","42.10","-0.34","DK"]
+];
+
+let watch=JSON.parse(localStorage.getItem("marketx_watch")||"[]");
+let history=JSON.parse(localStorage.getItem("marketx_history")||"[]");
+let current=null, detailChart=null, miniCharts=[];
+
+function stockCard(s){
+ const [t,n,p,c,m]=s, positive=Number(c)>=0;
+ return `<div class="card clickable" onclick="openStock('${t}')">
+  <div class="stock">
+   <div class="stock-left"><div class="logo">${t.slice(0,3)}</div><div><div class="name">${n}</div><div class="ticker">${t} · ${m}</div></div></div>
+   <div><div class="price">${p}</div><div class="change ${positive?'up':'down'}">${positive?'▲':'▼'} ${c}%</div></div>
+  </div>
+  <canvas class="mini" data-ticker="${t}"></canvas>
+ </div>`;
+}
+
+function renderAll(){
+ document.getElementById("stockGrid").innerHTML=stocks.map(stockCard).join("");
+ renderWatch();renderHistory();drawMiniCharts();
+}
+
+function renderWatch(){
+ const arr=stocks.filter(s=>watch.includes(s[0]));
+ document.getElementById("watchGrid").innerHTML=arr.length?arr.map(stockCard).join(""):`<div class="empty">${T("emptyWatch")}</div>`;
+}
+
+function renderHistory(){
+ const arr=history.map(t=>stocks.find(s=>s[0]===t)).filter(Boolean);
+ document.getElementById("historyGrid").innerHTML=arr.length?arr.map(stockCard).join(""):`<div class="empty">${T("emptyHistory")}</div>`;
+}
+
+function searchStocks(){
+ const q=document.getElementById("searchInput").value.toLowerCase().trim();
+ const box=document.getElementById("results");
+ if(!q){box.innerHTML="";return}
+ const arr=stocks.filter(s=>(s[0]+" "+s[1]+" "+s[4]).toLowerCase().includes(q)).slice(0,25);
+ box.innerHTML=arr.length?`<div class="card">${arr.map(s=>`
+  <div class="result-row" onclick="openStock('${s[0]}')">
+   <div><b>${s[0]}</b><div class="muted">${s[1]} · ${s[4]}</div></div>
+   <span>›</span>
+  </div>`).join("")}</div>`:`<div class="card empty">${T("notFound")}</div>`;
+}
+
+function showPage(id,btn){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ const page=document.getElementById(id);if(page)page.classList.add("active");
+ document.querySelectorAll(".nav").forEach(n=>n.classList.remove("active"));
+ if(btn)btn.classList.add("active");
+ else{
+  const nav=document.querySelector(`.nav[data-page="${id}"]`);if(nav)nav.classList.add("active");
+ }
+ window.scrollTo({top:0,behavior:"smooth"});
+ if(id==="watchlist")renderWatch();
+ if(id==="history")renderHistory();
+}
+
+function goHome(){showPage("home");}
+
+function openStock(ticker){
+ current=stocks.find(s=>s[0]===ticker);if(!current)return;
+ history=[ticker,...history.filter(x=>x!==ticker)].slice(0,20);
+ localStorage.setItem("marketx_history",JSON.stringify(history));
+ const [t,n,p,c,m]=current,positive=Number(c)>=0;
+ const inWatch=watch.includes(t);
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById("detail").classList.add("active");
+ document.querySelectorAll(".nav").forEach(n=>n.classList.remove("active"));
+ document.getElementById("detailContent").innerHTML=`
+ <div class="detail-card">
+  <div class="stock">
+   <div class="stock-left"><div class="logo">${t.slice(0,3)}</div><div><div class="detail-name">${n}</div><div class="ticker">${t} · ${m}</div></div></div>
+   <span class="badge">${positive?T("gain"):T("move")}</span>
+  </div>
+  <div class="detail-price">${p}</div>
+  <div class="${positive?'up':'down'}">${positive?'▲':'▼'} ${c}% ${T("today")}</div>
+  <div class="detail-actions">
+   <button class="action-btn primary" onclick="toggleWatch()">${inWatch?T("inWatch"):T("addWatch")}</button>
+   <button class="action-btn" onclick="shareStock()">${T("share")}</button>
+  </div>
+  <div class="periods">
+   <button class="selected" onclick="setPeriod(this,'1D')">1D</button>
+   <button onclick="setPeriod(this,'1W')">1W</button>
+   <button onclick="setPeriod(this,'1M')">1M</button>
+   <button onclick="setPeriod(this,'3M')">3M</button>
+   <button onclick="setPeriod(this,'1Y')">1Y</button>
+   <button onclick="setPeriod(this,'5Y')">5Y</button>
+  </div>
+  <div class="chart-wrap"><canvas id="detailChart"></canvas></div>
+  <div class="stats">
+   <div class="stat"><span class="muted">${T("open")}</span><b>${p}</b></div>
+   <div class="stat"><span class="muted">${T("change")}</span><b class="${positive?'up':'down'}">${c}%</b></div>
+   <div class="stat"><span class="muted">${T("marketLabel")}</span><b>${m}</b></div>
+   <div class="stat"><span class="muted">${T("status")}</span><b>${T("demoStatus")}</b></div>
+  </div>
+ </div>`;
+ drawDetailChart("1D");
+}
+
+function makeSeries(seed,count){
+ let n=0;for(let i=0;i<seed.length;i++)n+=seed.charCodeAt(i);
+ let base=100+(n%70),arr=[];
+ for(let i=0;i<count;i++){
+  const wave=Math.sin((i+n)*.55)*3+Math.cos((i+n)*.19)*2;
+  const drift=i*(Number(current?.[3]||0)>=0?.12:-.08);
+  arr.push(Number((base+wave+drift+(i%5)*.25).toFixed(2)));
+ }
+ return arr;
+}
+
+function labelsFor(period,count){
+ const a=[];
+ for(let i=0;i<count;i++){
+  if(period==="1D")a.push(`${String(Math.floor(i/2)).padStart(2,"0")}:${i%2?"30":"00"}`);
+  else if(period==="1W")a.push(`H${i+1}`);
+  else if(period==="1M")a.push(`${i+1}`);
+  else if(period==="3M")a.push(`M${i+1}`);
+  else if(period==="1Y")a.push(`B${i+1}`);
+  else a.push(`${2022+i}`);
+ }
+ return a;
+}
+
+function drawDetailChart(period){
+ const canvas=document.getElementById("detailChart");if(!canvas)return;
+ if(detailChart)detailChart.destroy();
+ const count=period==="1D"?24:period==="1W"?14:period==="1M"?30:period==="3M"?12:period==="1Y"?12:5;
+ const data=makeSeries(current[0]+period,count),labels=labelsFor(period,count);
+ detailChart=new Chart(canvas,{type:"line",data:{labels,datasets:[{
+  data,borderColor:Number(current[3])>=0?"#20cf91":"#ff5b78",backgroundColor:"rgba(113,128,255,.10)",
+  fill:true,tension:.38,pointRadius:0,borderWidth:2
+ }]},options:{
+  responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:"index"},
+  plugins:{legend:{display:false},tooltip:{displayColors:false}},
+  scales:{x:{grid:{display:false},ticks:{color:getComputedStyle(document.body).getPropertyValue("--muted")}},
+  y:{grid:{color:getComputedStyle(document.body).getPropertyValue("--line")},ticks:{color:getComputedStyle(document.body).getPropertyValue("--muted")}}}
+ }});
+}
+
+function setPeriod(btn,period){
+ document.querySelectorAll(".periods button").forEach(x=>x.classList.remove("selected"));
+ btn.classList.add("selected");drawDetailChart(period);
+}
+
+function drawMiniCharts(){
+ miniCharts.forEach(c=>c.destroy());miniCharts=[];
+ document.querySelectorAll(".mini").forEach((canvas,i)=>{
+  const seed=canvas.dataset.ticker, vals=makeSeries(seed,18);
+  const s=stocks.find(x=>x[0]===seed),positive=Number(s?.[3]||0)>=0;
+  miniCharts.push(new Chart(canvas,{type:"line",data:{labels:vals.map((_,i)=>i),datasets:[{
+   data:vals,borderColor:positive?"#20cf91":"#ff5b78",borderWidth:1.5,pointRadius:0,tension:.4
+  }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:{display:false},y:{display:false}}}}));
+ });
+}
+
+function toggleWatch(){
+ if(!current)return;
+ const t=current[0];
+ if(watch.includes(t))watch=watch.filter(x=>x!==t);else watch.push(t);
+ localStorage.setItem("marketx_watch",JSON.stringify(watch));
+ openStock(t);renderWatch();
+}
+
+function clearWatch(){watch=[];localStorage.setItem("marketx_watch","[]");renderWatch();}
+function clearHistory(){history=[];localStorage.setItem("marketx_history","[]");renderHistory();}
+
+function toggleTheme(){
+ document.body.classList.toggle("light");
+ const light=document.body.classList.contains("light");
+ localStorage.setItem("marketx_light",light?"1":"0");
+ document.getElementById("themeToggle").classList.toggle("on",light);
+ if(document.getElementById("detail").classList.contains("active")&&current)drawDetailChart("1D");
+}
+function loadTheme(){
+ const light=localStorage.getItem("marketx_light")==="1";
+ document.body.classList.toggle("light",light);
+ document.getElementById("themeToggle").classList.toggle("on",light);
+}
+
+async function shareStock(){
+ if(!current)return;
+ const text=`${current[0]} — ${current[1]} | Harga: ${current[2]}`;
+ try{
+  if(navigator.share)await navigator.share({title:current[1],text});
+  else await navigator.clipboard.writeText(text),alert(T("copied"));
+ }catch(e){}
+}
+
+const translations={
+ id:{home:"Home",watch:"Watchlist",history:"Riwayat",settings:"Pengaturan",market:"Ringkasan Pasar",popular:"Saham Populer",search:"Cari ticker atau nama perusahaan...",white:"Mode Putih",whiteDesc:"Gunakan tampilan terang",language:"Bahasa",languageDesc:"Bahasa aplikasi",currency:"Mata uang",currencyDesc:"Format harga",notif:"Notifikasi",notifDesc:"Perubahan harga & watchlist",reduce:"Kurangi Animasi",reduceDesc:"Kurangi efek gerak",data:"Data",clearHistory:"Hapus Riwayat",clearHistoryDesc:"Menghapus daftar saham yang pernah dibuka",clear:"Hapus",resetWatch:"Reset Watchlist",resetDesc:"Menghapus semua favorit",reset:"Reset",about:"Tentang",aboutDesc:"Aplikasi data saham dengan tampilan modern, search, watchlist, history, dan grafik.",version:"Versi 1.0 Prototype",developer:"Developer: Dikembangkan oleh Robi Dan Gpt",demo:"Catatan: angka saham bawaan adalah data demo, bukan kuotasi real-time.",back:"Kembali",detail:"Detail Saham",today:"hari ini",open:"Buka",change:"Perubahan",marketLabel:"Pasar",status:"Status",demoStatus:"Data demo",addWatch:"☆ Tambah Watchlist",inWatch:"★ Di Watchlist",share:"↗ Bagikan",gain:"GAIN",move:"MOVE",emptyWatch:"Belum ada saham di Watchlist.<br><br>Buka saham lalu tekan ⭐ Tambah Watchlist.",emptyHistory:"Belum ada riwayat saham yang dibuka.",notFound:"Saham tidak ditemukan.",copied:"Info saham disalin."},
+ en:{home:"Home",watch:"Watchlist",history:"History",settings:"Settings",market:"Market Overview",popular:"Popular Stocks",search:"Search ticker or company name...",white:"White Mode",whiteDesc:"Use light appearance",language:"Language",languageDesc:"App language",currency:"Currency",currencyDesc:"Price format",notif:"Notifications",notifDesc:"Price & watchlist changes",reduce:"Reduce Animations",reduceDesc:"Reduce motion effects",data:"Data",clearHistory:"Clear History",clearHistoryDesc:"Remove opened stock history",clear:"Clear",resetWatch:"Reset Watchlist",resetDesc:"Remove all favorites",reset:"Reset",about:"About",aboutDesc:"Modern stock data app with search, watchlist, history, and charts.",version:"Version 1.0 Prototype",developer:"Developer: Developed by Robi Dan Gpt",demo:"Note: built-in stock figures are demo data, not real-time quotes.",back:"Back",detail:"Stock Detail",today:"today",open:"Open",change:"Change",marketLabel:"Market",status:"Status",demoStatus:"Demo data",addWatch:"☆ Add to Watchlist",inWatch:"★ In Watchlist",share:"↗ Share",gain:"GAIN",move:"MOVE",emptyWatch:"No stocks in Watchlist.<br><br>Open a stock and press ⭐ Add to Watchlist.",emptyHistory:"No opened stock history yet.",notFound:"Stock not found.",copied:"Stock info copied."},
+ ja:{home:"ホーム",watch:"ウォッチリスト",history:"履歴",settings:"設定",market:"市場概要",popular:"人気銘柄",search:"ティッカーまたは会社名を検索...",white:"ライトモード",whiteDesc:"明るい表示を使用",language:"言語",languageDesc:"アプリの言語",currency:"通貨",currencyDesc:"価格表示",notif:"通知",notifDesc:"価格とウォッチリストの変更",reduce:"アニメーションを減らす",reduceDesc:"動きを減らす",data:"データ",clearHistory:"履歴を削除",clearHistoryDesc:"開いた銘柄の履歴を削除",clear:"削除",resetWatch:"ウォッチリストをリセット",resetDesc:"お気に入りをすべて削除",reset:"リセット",about:"このアプリについて",aboutDesc:"検索、ウォッチリスト、履歴、チャートを備えた株価データアプリ。",version:"バージョン 1.0 Prototype",developer:"開発者: Robi Dan Gpt",demo:"注: 内蔵の株価はデモデータで、リアルタイムではありません。",back:"戻る",detail:"銘柄詳細",today:"本日",open:"始値",change:"変化",marketLabel:"市場",status:"状態",demoStatus:"デモデータ",addWatch:"☆ ウォッチリストに追加",inWatch:"★ ウォッチリスト登録済み",share:"↗ 共有",gain:"上昇",move:"変動",emptyWatch:"ウォッチリストは空です。<br><br>銘柄を開いて⭐を押してください。",emptyHistory:"開いた銘柄の履歴はありません。",notFound:"銘柄が見つかりません。",copied:"銘柄情報をコピーしました。"},
+ ko:{home:"홈",watch:"관심종목",history:"기록",settings:"설정",market:"시장 개요",popular:"인기 종목",search:"티커 또는 회사명 검색...",white:"화이트 모드",whiteDesc:"밝은 화면 사용",language:"언어",languageDesc:"앱 언어",currency:"통화",currencyDesc:"가격 형식",notif:"알림",notifDesc:"가격 및 관심종목 변경",reduce:"애니메이션 줄이기",reduceDesc:"움직임 효과 줄이기",data:"데이터",clearHistory:"기록 삭제",clearHistoryDesc:"열어본 종목 기록 삭제",clear:"삭제",resetWatch:"관심종목 초기화",resetDesc:"모든 즐겨찾기 삭제",reset:"초기화",about:"정보",aboutDesc:"검색, 관심종목, 기록 및 차트를 제공하는 현대적인 주식 데이터 앱.",version:"버전 1.0 Prototype",developer:"개발자: Robi Dan Gpt",demo:"참고: 기본 주가는 데모 데이터이며 실시간 시세가 아닙니다.",back:"뒤로",detail:"종목 상세",today:"오늘",open:"시가",change:"변동",marketLabel:"시장",status:"상태",demoStatus:"데모 데이터",addWatch:"☆ 관심종목 추가",inWatch:"★ 관심종목 등록됨",share:"↗ 공유",gain:"상승",move:"변동",emptyWatch:"관심종목이 없습니다.<br><br>종목을 열고 ⭐를 눌러 추가하세요.",emptyHistory:"열어본 종목 기록이 없습니다.",notFound:"종목을 찾을 수 없습니다.",copied:"종목 정보를 복사했습니다."},
+ zh:{home:"首页",watch:"自选",history:"历史",settings:"设置",market:"市场概览",popular:"热门股票",search:"搜索股票代码或公司名称...",white:"白色模式",whiteDesc:"使用浅色界面",language:"语言",languageDesc:"应用语言",currency:"货币",currencyDesc:"价格格式",notif:"通知",notifDesc:"价格和自选变化",reduce:"减少动画",reduceDesc:"减少动态效果",data:"数据",clearHistory:"清除历史",clearHistoryDesc:"删除已查看股票记录",clear:"清除",resetWatch:"重置自选",resetDesc:"删除所有收藏",reset:"重置",about:"关于",aboutDesc:"现代股票数据应用，支持搜索、自选、历史和图表。",version:"版本 1.0 Prototype",developer:"开发者: Robi Dan Gpt",demo:"注意：内置股票数据为演示数据，并非实时行情。",back:"返回",detail:"股票详情",today:"今日",open:"开盘",change:"涨跌",marketLabel:"市场",status:"状态",demoStatus:"演示数据",addWatch:"☆ 加入自选",inWatch:"★ 已在自选",share:"↗ 分享",gain:"上涨",move:"波动",emptyWatch:"自选列表为空。<br><br>打开股票并点击⭐添加。",emptyHistory:"暂无查看记录。",notFound:"未找到股票。",copied:"股票信息已复制。"},
+ es:{home:"Inicio",watch:"Favoritos",history:"Historial",settings:"Ajustes",market:"Resumen del mercado",popular:"Acciones populares",search:"Buscar ticker o empresa...",white:"Modo blanco",whiteDesc:"Usar apariencia clara",language:"Idioma",languageDesc:"Idioma de la app",currency:"Moneda",currencyDesc:"Formato de precio",notif:"Notificaciones",notifDesc:"Cambios de precio y favoritos",reduce:"Reducir animaciones",reduceDesc:"Reducir efectos de movimiento",data:"Datos",clearHistory:"Borrar historial",clearHistoryDesc:"Eliminar historial de acciones abiertas",clear:"Borrar",resetWatch:"Restablecer favoritos",resetDesc:"Eliminar todos los favoritos",reset:"Restablecer",about:"Acerca de",aboutDesc:"App moderna de datos bursátiles con búsqueda, favoritos, historial y gráficos.",version:"Versión 1.0 Prototype",developer:"Desarrollado por Robi Dan Gpt",demo:"Nota: los valores integrados son datos de demostración, no cotizaciones en tiempo real.",back:"Volver",detail:"Detalle de acción",today:"hoy",open:"Apertura",change:"Cambio",marketLabel:"Mercado",status:"Estado",demoStatus:"Datos demo",addWatch:"☆ Añadir a favoritos",inWatch:"★ En favoritos",share:"↗ Compartir",gain:"SUBE",move:"CAMBIO",emptyWatch:"No hay acciones en favoritos.<br><br>Abre una acción y pulsa ⭐ para añadirla.",emptyHistory:"No hay historial de acciones abiertas.",notFound:"Acción no encontrada.",copied:"Información copiada."},
+ fr:{home:"Accueil",watch:"Favoris",history:"Historique",settings:"Réglages",market:"Aperçu du marché",popular:"Actions populaires",search:"Rechercher un ticker ou une entreprise...",white:"Mode clair",whiteDesc:"Utiliser l'affichage clair",language:"Langue",languageDesc:"Langue de l'app",currency:"Devise",currencyDesc:"Format des prix",notif:"Notifications",notifDesc:"Changements de prix et favoris",reduce:"Réduire les animations",reduceDesc:"Réduire les effets de mouvement",data:"Données",clearHistory:"Effacer l'historique",clearHistoryDesc:"Supprimer l'historique des actions ouvertes",clear:"Effacer",resetWatch:"Réinitialiser les favoris",resetDesc:"Supprimer tous les favoris",reset:"Réinitialiser",about:"À propos",aboutDesc:"Application moderne de données boursières avec recherche, favoris, historique et graphiques.",version:"Version 1.0 Prototype",developer:"Développé par Robi Dan Gpt",demo:"Note : les valeurs intégrées sont des données de démonstration, pas des cours en temps réel.",back:"Retour",detail:"Détail de l'action",today:"aujourd'hui",open:"Ouverture",change:"Variation",marketLabel:"Marché",status:"Statut",demoStatus:"Données démo",addWatch:"☆ Ajouter aux favoris",inWatch:"★ Dans les favoris",share:"↗ Partager",gain:"HAUSSE",move:"VARIATION",emptyWatch:"Aucune action dans les favoris.<br><br>Ouvrez une action et appuyez sur ⭐ pour l'ajouter.",emptyHistory:"Aucun historique d'actions ouvert.",notFound:"Action introuvable.",copied:"Informations copiées."},
+ de:{home:"Start",watch:"Watchlist",history:"Verlauf",settings:"Einstellungen",market:"Marktübersicht",popular:"Beliebte Aktien",search:"Ticker oder Unternehmen suchen...",white:"Heller Modus",whiteDesc:"Helle Darstellung verwenden",language:"Sprache",languageDesc:"App-Sprache",currency:"Währung",currencyDesc:"Preisformat",notif:"Benachrichtigungen",notifDesc:"Preis- und Watchlist-Änderungen",reduce:"Animationen reduzieren",reduceDesc:"Bewegungseffekte reduzieren",data:"Daten",clearHistory:"Verlauf löschen",clearHistoryDesc:"Verlauf geöffneter Aktien löschen",clear:"Löschen",resetWatch:"Watchlist zurücksetzen",resetDesc:"Alle Favoriten entfernen",reset:"Zurücksetzen",about:"Über",aboutDesc:"Moderne Aktien-App mit Suche, Watchlist, Verlauf und Charts.",version:"Version 1.0 Prototype",developer:"Entwickelt von Robi Dan Gpt",demo:"Hinweis: Die integrierten Werte sind Demo-Daten, keine Echtzeitkurse.",back:"Zurück",detail:"Aktien-Details",today:"heute",open:"Eröffnung",change:"Änderung",marketLabel:"Markt",status:"Status",demoStatus:"Demo-Daten",addWatch:"☆ Zur Watchlist",inWatch:"★ In Watchlist",share:"↗ Teilen",gain:"GEWINN",move:"BEWEGUNG",emptyWatch:"Keine Aktien in der Watchlist.<br><br>Öffne eine Aktie und drücke ⭐ zum Hinzufügen.",emptyHistory:"Noch kein Verlauf geöffneter Aktien.",notFound:"Aktie nicht gefunden.",copied:"Aktieninfo kopiert."},
+ ru:{home:"Главная",watch:"Избранное",history:"История",settings:"Настройки",market:"Обзор рынка",popular:"Популярные акции",search:"Поиск тикера или компании...",white:"Светлая тема",whiteDesc:"Использовать светлый вид",language:"Язык",languageDesc:"Язык приложения",currency:"Валюта",currencyDesc:"Формат цены",notif:"Уведомления",notifDesc:"Изменения цены и избранного",reduce:"Уменьшить анимацию",reduceDesc:"Уменьшить эффекты движения",data:"Данные",clearHistory:"Очистить историю",clearHistoryDesc:"Удалить историю открытых акций",clear:"Очистить",resetWatch:"Сбросить избранное",resetDesc:"Удалить все избранные",reset:"Сбросить",about:"О приложении",aboutDesc:"Современное приложение с данными акций, поиском, избранным, историей и графиками.",version:"Версия 1.0 Prototype",developer:"Разработано Robi Dan Gpt",demo:"Примечание: встроенные значения — демонстрационные данные, не котировки в реальном времени.",back:"Назад",detail:"Детали акции",today:"сегодня",open:"Открытие",change:"Изменение",marketLabel:"Рынок",status:"Статус",demoStatus:"Демо-данные",addWatch:"☆ В избранное",inWatch:"★ В избранном",share:"↗ Поделиться",gain:"РОСТ",move:"ДВИЖЕНИЕ",emptyWatch:"В избранном нет акций.<br><br>Откройте акцию и нажмите ⭐ для добавления.",emptyHistory:"История открытых акций пуста.",notFound:"Акция не найдена.",copied:"Информация скопирована."}
+};
+let currentLang=localStorage.getItem("marketx_lang")||"id";
+function T(k){return (translations[currentLang]||translations.id)[k]||translations.id[k]||k}
+function applyLanguage(){
+ const map={navHome:"home",navWatch:"watch",navHistory:"history",navSettings:"settings",marketOverviewTitle:"market",popularTitle:"popular",settingsTitle:"settings",whiteModeLabel:"white",whiteModeDesc:"whiteDesc",languageLabel:"language",languageDesc:"languageDesc",currencyLabel:"currency",currencyDesc:"currencyDesc",notifLabel:"notif",notifDesc:"notifDesc",reduceLabel:"reduce",reduceDesc:"reduceDesc",dataTitle:"data",clearHistoryLabel:"clearHistory",clearHistoryDesc:"clearHistoryDesc",clearHistoryBtn:"clear",resetWatchLabel:"resetWatch",resetWatchDesc:"resetDesc",resetWatchBtn:"reset",aboutTitle:"about",aboutDesc:"aboutDesc",versionText:"version",developerText:"developer",demoNote:"demo"};
+ Object.entries(map).forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.innerHTML=T(key)});
+ const si=document.getElementById("searchInput");if(si)si.placeholder=T("search");
+ const back=document.querySelector("#detail .back");if(back)back.textContent="← "+T("back");
+ const ds=document.querySelector("#detail .detail-head .muted");if(ds)ds.textContent=T("detail");
+ document.documentElement.lang=currentLang;
+ renderWatch();renderHistory();
+ if(current) openStock(current[0]);
+}
+function setLanguage(lang){currentLang=lang;localStorage.setItem("marketx_lang",lang);applyLanguage()}
+function translateDynamic(){return}
+
+renderAll();
+loadTheme();
+const langSelect=document.getElementById("languageSelect");if(langSelect)langSelect.value=currentLang;
+applyLanguage();
+</script>
+</body>
+</html>
